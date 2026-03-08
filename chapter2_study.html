@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Mining Ch.2 — Study Tool</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --border: #1e1e2e;
+    --accent: #7c3aed;
+    --accent2: #06b6d4;
+    --accent3: #f59e0b;
+    --correct: #10b981;
+    --wrong: #ef4444;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --card: #16162a;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Syne', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(124,58,237,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(124,58,237,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  header {
+    text-align: center;
+    margin-bottom: 3rem;
+    animation: fadeDown 0.6s ease both;
+  }
+
+  .chapter-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.25em;
+    color: var(--accent2);
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+
+  header h1 {
+    font-size: clamp(1.8rem, 5vw, 3rem);
+    font-weight: 800;
+    line-height: 1.1;
+    background: linear-gradient(135deg, #c4b5fd 0%, #818cf8 40%, var(--accent2) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle {
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+  }
+
+  /* Tab nav */
+  .tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.35rem;
+    animation: fadeDown 0.7s ease 0.1s both;
+    flex-wrap: wrap;
+  }
+
+  .tab {
+    flex: 1;
+    min-width: 100px;
+    padding: 0.6rem 0.8rem;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .tab.active {
+    background: var(--accent);
+    color: white;
+  }
+
+  .tab:hover:not(.active) { color: var(--text); background: var(--border); }
+
+  /* Sections */
+  .section { display: none; animation: fadeUp 0.4s ease both; }
+  .section.active { display: block; }
+
+  /* ====== FLASHCARDS ====== */
+  .flashcard-area { perspective: 1200px; }
+
+  .progress-bar {
+    background: var(--border);
+    border-radius: 4px;
+    height: 4px;
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 4px;
+    transition: width 0.4s ease;
+  }
+
+  .card-counter {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--muted);
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+
+  .flashcard {
+    width: 100%;
+    height: 260px;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.55s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    cursor: pointer;
+    margin-bottom: 1.5rem;
+  }
+
+  .flashcard.flipped { transform: rotateY(180deg); }
+
+  .card-face {
+    position: absolute;
+    inset: 0;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    text-align: center;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    border: 1px solid var(--border);
+  }
+
+  .card-front {
+    background: var(--card);
+    border-color: var(--accent);
+    box-shadow: 0 0 40px rgba(124,58,237,0.15), inset 0 1px 0 rgba(255,255,255,0.05);
+  }
+
+  .card-back {
+    background: linear-gradient(135deg, #0f0f20 0%, #1a1030 100%);
+    border-color: var(--accent2);
+    transform: rotateY(180deg);
+    box-shadow: 0 0 40px rgba(6,182,212,0.15);
+  }
+
+  .card-tag {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+  }
+
+  .card-front .card-tag { background: rgba(124,58,237,0.2); color: #a78bfa; }
+  .card-back .card-tag { background: rgba(6,182,212,0.2); color: var(--accent2); }
+
+  .card-front .card-text {
+    font-size: clamp(1rem, 2.5vw, 1.3rem);
+    font-weight: 700;
+    line-height: 1.4;
+    color: #e2e8f0;
+  }
+
+  .card-back .card-text {
+    font-size: clamp(0.85rem, 2vw, 1rem);
+    line-height: 1.6;
+    color: #cbd5e1;
+  }
+
+  .flip-hint {
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-top: 1rem;
+    font-family: 'Space Mono', monospace;
+  }
+
+  .card-controls {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    padding: 0.6rem 1.4rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.03em;
+  }
+
+  .btn:hover { border-color: var(--accent); color: #a78bfa; transform: translateY(-1px); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: white; }
+  .btn.primary:hover { background: #6d28d9; color: white; }
+  .btn.success { background: var(--correct); border-color: var(--correct); color: white; }
+  .btn.danger { background: var(--wrong); border-color: var(--wrong); color: white; }
+
+  /* ====== QUIZ ====== */
+  .quiz-question {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.8rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .q-number {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--accent2);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+  }
+
+  .q-text {
+    font-size: 1.05rem;
+    font-weight: 700;
+    line-height: 1.5;
+    margin-bottom: 1.25rem;
+  }
+
+  .options { display: flex; flex-direction: column; gap: 0.6rem; }
+
+  .option {
+    padding: 0.75rem 1rem;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+    line-height: 1.4;
+  }
+
+  .option:hover:not(:disabled) { border-color: var(--accent); color: #c4b5fd; }
+  .option.correct { border-color: var(--correct); background: rgba(16,185,129,0.12); color: #6ee7b7; }
+  .option.wrong { border-color: var(--wrong); background: rgba(239,68,68,0.12); color: #fca5a5; }
+  .option:disabled { cursor: default; }
+
+  .explanation {
+    margin-top: 1rem;
+    padding: 0.85rem 1rem;
+    background: rgba(124,58,237,0.1);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    font-size: 0.85rem;
+    line-height: 1.6;
+    color: #c4b5fd;
+    display: none;
+  }
+
+  .explanation.show { display: block; animation: fadeUp 0.3s ease; }
+
+  .quiz-score {
+    text-align: center;
+    padding: 2rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    display: none;
+  }
+
+  .score-number {
+    font-size: 4rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--accent2), var(--correct));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+  }
+
+  .score-label { color: var(--muted); font-size: 0.9rem; margin-top: 0.5rem; margin-bottom: 1.5rem; }
+
+  /* ====== REFERENCE ====== */
+  .ref-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; }
+
+  .ref-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+
+  .ref-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+
+  .ref-card h3 {
+    font-size: 0.85rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--accent2);
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .ref-card h3 span { font-size: 1rem; }
+
+  .ref-item {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: #cbd5e1;
+  }
+
+  .ref-item::before {
+    content: '→';
+    color: var(--accent);
+    flex-shrink: 0;
+    font-family: 'Space Mono', monospace;
+  }
+
+  .formula {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    background: rgba(124,58,237,0.15);
+    border: 1px solid rgba(124,58,237,0.3);
+    border-radius: 6px;
+    padding: 0.4rem 0.6rem;
+    color: #c4b5fd;
+    margin-top: 0.4rem;
+    word-break: break-all;
+  }
+
+  /* ====== MATCH ====== */
+  .match-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .match-col h3 {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.75rem;
+    text-align: center;
+  }
+
+  .match-item {
+    padding: 0.65rem 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 0.5rem;
+    text-align: center;
+    line-height: 1.4;
+  }
+
+  .match-item:hover:not(.matched):not(.selected) { border-color: var(--accent); }
+  .match-item.selected { border-color: var(--accent2); background: rgba(6,182,212,0.1); color: var(--accent2); }
+  .match-item.matched { border-color: var(--correct); background: rgba(16,185,129,0.1); color: #6ee7b7; cursor: default; }
+  .match-item.wrong-match { border-color: var(--wrong); background: rgba(239,68,68,0.1); animation: shake 0.4s ease; }
+
+  .match-score-bar {
+    text-align: center;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-bottom: 1rem;
+  }
+
+  /* Animations */
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-15px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    25% { transform: translateX(-6px); }
+    75% { transform: translateX(6px); }
+  }
+
+  .stat-row {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .stat { text-align: center; }
+  .stat-val { font-size: 1.5rem; font-weight: 800; color: var(--accent2); font-family: 'Space Mono', monospace; }
+  .stat-lbl { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+
+  @media (max-width: 600px) {
+    .match-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="chapter-label">Data Mining: Concepts &amp; Techniques</div>
+    <h1>Chapter 2 Study Tool</h1>
+    <p class="subtitle">Getting to Know Your Data — Flashcards · Quiz · Reference · Matching</p>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('flashcards')">🃏 Flashcards</button>
+    <button class="tab" onclick="switchTab('quiz')">📝 Quiz</button>
+    <button class="tab" onclick="switchTab('reference')">📖 Reference</button>
+    <button class="tab" onclick="switchTab('match')">🔗 Match</button>
+  </div>
+
+  <!-- ====== FLASHCARDS ====== -->
+  <div class="section active" id="sec-flashcards">
+    <div class="progress-bar"><div class="progress-fill" id="fc-progress"></div></div>
+    <div class="card-counter" id="fc-counter"></div>
+    <div class="flashcard-area">
+      <div class="flashcard" id="flashcard" onclick="flipCard()">
+        <div class="card-face card-front">
+          <div class="card-tag">Term</div>
+          <div class="card-text" id="fc-front"></div>
+          <div class="flip-hint">↕ click to flip</div>
+        </div>
+        <div class="card-face card-back">
+          <div class="card-tag">Definition</div>
+          <div class="card-text" id="fc-back"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card-controls">
+      <button class="btn" onclick="fcNav(-1)">← Prev</button>
+      <button class="btn primary" onclick="flipCard()">Flip</button>
+      <button class="btn" onclick="fcNav(1)">Next →</button>
+      <button class="btn" onclick="shuffle()">🔀 Shuffle</button>
+    </div>
+  </div>
+
+  <!-- ====== QUIZ ====== -->
+  <div class="section" id="sec-quiz">
+    <div id="quiz-container"></div>
+    <div class="quiz-score" id="quiz-score">
+      <div class="score-number" id="score-num"></div>
+      <div class="score-label" id="score-label"></div>
+      <button class="btn primary" onclick="restartQuiz()">Retake Quiz</button>
+    </div>
+  </div>
+
+  <!-- ====== REFERENCE ====== -->
+  <div class="section" id="sec-reference">
+    <div class="ref-grid" id="ref-grid"></div>
+  </div>
+
+  <!-- ====== MATCH ====== -->
+  <div class="section" id="sec-match">
+    <div class="match-score-bar" id="match-score"></div>
+    <div class="match-grid">
+      <div>
+        <h3>Term</h3>
+        <div id="match-terms"></div>
+      </div>
+      <div>
+        <h3>Definition</h3>
+        <div id="match-defs"></div>
+      </div>
+    </div>
+    <div style="text-align:center">
+      <button class="btn primary" onclick="setupMatch()">🔀 New Round</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ========================
+// DATA
+// ========================
+const flashcards = [
+  { front: "Nominal Attribute", back: "Categories or names with no ordering. E.g., hair color, zip codes, marital status. Only equality comparisons are meaningful." },
+  { front: "Binary Attribute", back: "Nominal attribute with only 2 states (0 and 1). Symmetric: both outcomes equally important (e.g., gender). Asymmetric: outcomes differ in importance (e.g., medical test)." },
+  { front: "Ordinal Attribute", back: "Values have a meaningful order/ranking, but magnitude between successive values is unknown. E.g., size = {small, medium, large}, grades, army rankings." },
+  { front: "Interval-Scaled Attribute", back: "Measured on equal-sized units with order, but NO true zero-point. E.g., temperature in °C or °F, calendar dates." },
+  { front: "Ratio-Scaled Attribute", back: "Inherent zero-point exists. Values can be compared as multiples. E.g., temperature in Kelvin, length, counts, monetary quantities." },
+  { front: "Discrete Attribute", back: "Has a finite or countably infinite set of values. E.g., zip codes, profession. Binary attributes are a special case." },
+  { front: "Continuous Attribute", back: "Has real numbers as attribute values. E.g., temperature, height, weight. Typically represented as floating-point variables." },
+  { front: "Mean", back: "Arithmetic average: x̄ = (1/n) Σxᵢ. Sensitive to outliers. Population mean uses μ = Σx/N." },
+  { front: "Median", back: "Middle value of sorted data (odd count), or average of two middle values (even count). Robust to outliers." },
+  { front: "Mode", back: "Value that occurs most frequently. Data can be unimodal, bimodal, multimodal, or have no mode. For unimodal data: mean − mode ≈ 3(mean − median)." },
+  { front: "Midrange", back: "Simple average of the max and min values: (min + max) / 2." },
+  { front: "Variance (Sample)", back: "s² = 1/(n−1) × Σ(xᵢ − x̄)². Measures spread around the mean. Standard deviation s is its square root." },
+  { front: "Interquartile Range (IQR)", back: "IQR = Q3 − Q1. The spread of the middle 50% of the data. Used to detect outliers: values beyond 1.5 × IQR from quartiles." },
+  { front: "Boxplot", back: "Visualizes five-number summary: min, Q1, median, Q3, max. Box spans Q1–Q3, line at median, whiskers extend to extremes, dots show outliers." },
+  { front: "Outlier", back: "A value typically higher or lower than 1.5 × IQR beyond Q1 or Q3. Plotted individually in a boxplot." },
+  { front: "Histogram", back: "Bar chart where area (not height) of each bar denotes frequency. Categories are adjacent non-overlapping intervals. Good for frequency distribution." },
+  { front: "Quantile Plot", back: "Plots all data values against their quantile position fᵢ = (i − 0.5)/N. Shows overall behavior and unusual occurrences." },
+  { front: "Q-Q Plot (Quantile-Quantile)", back: "Graphs quantiles of one distribution against another. Used to see if there is a shift between two distributions." },
+  { front: "Scatter Plot", back: "Each pair of values plotted as a point in 2D. First look at bivariate data; reveals clusters, outliers, positive/negative/no correlation." },
+  { front: "Similarity vs. Dissimilarity", back: "Similarity: higher when objects are more alike, typically in [0,1]. Dissimilarity (distance): lower when more alike, minimum is 0, upper limit varies." },
+  { front: "Minkowski Distance", back: "d(i,j) = (Σ|xᵢf − xⱼf|ʰ)^(1/h). General distance formula: h=1 → Manhattan, h=2 → Euclidean, h→∞ → Supremum." },
+  { front: "Euclidean Distance", back: "L₂ norm: d(i,j) = √(Σ(xᵢf − xⱼf)²). The straight-line distance between two points in space." },
+  { front: "Manhattan Distance", back: "L₁ norm (city block): d(i,j) = Σ|xᵢf − xⱼf|. Sum of absolute differences along each dimension." },
+  { front: "Supremum Distance", back: "L∞ norm: d(i,j) = max_f |xᵢf − xⱼf|. The maximum difference across any single dimension between two objects." },
+  { front: "Jaccard Coefficient", back: "Similarity for asymmetric binary attributes: sim(i,j) = q/(q+r+s), where q=both 1, r=i has 1, j has 0, s=i has 0, j has 1." },
+  { front: "Dissimilarity Matrix", back: "Symmetric n×n triangular matrix storing pairwise distances d(i,j). d(i,i)=0, d(i,j)=d(j,i), values near 0 indicate similar objects." },
+  { front: "Normal Distribution (68-95-99.7 Rule)", back: "μ±σ contains ~68%, μ±2σ contains ~95%, μ±3σ contains ~99.7% of measurements." },
+  { front: "Positively Skewed Data", back: "Distribution with a long right tail: mode < median < mean. Also called right-skewed." },
+  { front: "Negatively Skewed Data", back: "Distribution with a long left tail: mean < median < mode. Also called left-skewed." },
+  { front: "Pixel-Oriented Visualization", back: "For m-dimensional data, creates m windows. Each dimension value maps to a pixel; color reflects the value. Good for detecting patterns in large datasets." },
+  { front: "Chernoff Faces", back: "Icon-based technique where facial features (eye size, eyebrow slant, etc.) encode data values. Up to 18 symmetric or 36 asymmetric dimensions." },
+  { front: "Curse of Dimensionality", back: "As dimensionality increases, data becomes sparse and distance measures lose meaning. One of the key challenges of high-dimensional data." },
+  { front: "Ordinal Variable Normalization", back: "For ordinal attributes with Mf states: assign rank rᵢf ∈ {1,...,Mf}, then normalize: zᵢf = (rᵢf − 1)/(Mf − 1), mapping to [0,1]." },
+  { front: "Proximity (Data Mining)", back: "Refers to either similarity or dissimilarity — a numerical measure of how alike or different two data objects are." },
+  { front: "Five-Number Summary", back: "Minimum, Q1 (25th percentile), Median (50th), Q3 (75th percentile), and Maximum. Forms the basis for a boxplot." },
+];
+
+const quizData = [
+  {
+    q: "Which attribute type has a meaningful order but unknown magnitude between values?",
+    opts: ["Nominal", "Binary", "Ordinal", "Ratio-scaled"],
+    ans: 2,
+    exp: "Ordinal attributes have ranked values (e.g., small < medium < large), but we can't say how much larger 'large' is than 'medium'."
+  },
+  {
+    q: "Temperature measured in Celsius is an example of which attribute type?",
+    opts: ["Ratio-scaled", "Interval-scaled", "Nominal", "Ordinal"],
+    ans: 1,
+    exp: "Celsius is interval-scaled because it has no true zero-point (0°C doesn't mean 'no temperature'). Kelvin IS ratio-scaled."
+  },
+  {
+    q: "For unimodal data, which relationship holds approximately?",
+    opts: ["mean − mode = 2(mean − median)", "mean − mode = 3(mean − median)", "mode − mean = 3(median − mean)", "mean = mode = median"],
+    ans: 1,
+    exp: "The empirical rule for unimodal distributions states: mean − mode ≈ 3(mean − median)."
+  },
+  {
+    q: "The IQR is defined as:",
+    opts: ["max − min", "Q2 − Q1", "Q3 − Q1", "Q3 − Q2"],
+    ans: 2,
+    exp: "IQR = Q3 − Q1, representing the spread of the middle 50% of the data."
+  },
+  {
+    q: "A value is typically considered an outlier if it exceeds the nearest quartile by more than:",
+    opts: ["0.5 × IQR", "1.0 × IQR", "1.5 × IQR", "2.0 × IQR"],
+    ans: 2,
+    exp: "The standard rule is: any value more than 1.5 × IQR above Q3 or below Q1 is flagged as an outlier."
+  },
+  {
+    q: "In a positively (right) skewed distribution, the relationship is:",
+    opts: ["mean < median < mode", "mode < median < mean", "mean = median = mode", "median > mean > mode"],
+    ans: 1,
+    exp: "Right-skewed data has a long right tail pulling the mean up: mode < median < mean."
+  },
+  {
+    q: "The Minkowski distance with h=1 is known as:",
+    opts: ["Euclidean distance", "Supremum distance", "Manhattan distance", "Jaccard distance"],
+    ans: 2,
+    exp: "h=1 gives the Manhattan (city block, L₁) distance: sum of absolute differences."
+  },
+  {
+    q: "The Jaccard coefficient is used for:",
+    opts: ["Symmetric binary attributes", "Asymmetric binary attributes", "Ordinal attributes", "Ratio-scaled attributes"],
+    ans: 1,
+    exp: "Jaccard coefficient is designed for asymmetric binary attributes where positive matches (both=1) are more significant than negative matches."
+  },
+  {
+    q: "In a dissimilarity matrix, d(i,i) equals:",
+    opts: ["1", "0.5", "0", "Undefined"],
+    ans: 2,
+    exp: "The dissimilarity of an object to itself is always 0."
+  },
+  {
+    q: "A normal distribution contains approximately what percentage of data within μ ± 2σ?",
+    opts: ["68%", "95%", "99.7%", "50%"],
+    ans: 1,
+    exp: "The 68-95-99.7 rule: μ±σ = 68%, μ±2σ = 95%, μ±3σ = 99.7%."
+  },
+  {
+    q: "Histograms differ from bar charts in that the value is encoded by:",
+    opts: ["The height of each bar", "The area of each bar", "The color of each bar", "The width of each bar"],
+    ans: 1,
+    exp: "In a histogram, it's the area of the bar that denotes the frequency — this matters especially when categories are not of uniform width."
+  },
+  {
+    q: "Which visualization technique uses nested rectangles to display hierarchical data?",
+    opts: ["Scatter plot", "Chernoff Faces", "Tree-Map", "Pixel-oriented visualization"],
+    ans: 2,
+    exp: "Tree-Maps display hierarchical data as nested rectangles, where size can encode data values."
+  },
+  {
+    q: "For an ordinal attribute with Mf = 4 states, a value with rank 3 normalizes to:",
+    opts: ["0.5", "0.67", "0.75", "1.0"],
+    ans: 1,
+    exp: "zᵢf = (rᵢf − 1)/(Mf − 1) = (3 − 1)/(4 − 1) = 2/3 ≈ 0.67"
+  },
+  {
+    q: "The Supremum (L∞) distance between (1,2) and (3,5) is:",
+    opts: ["3.61", "5", "3", "6"],
+    ans: 2,
+    exp: "Supremum = max(|3−1|, |5−2|) = max(2, 3) = 3."
+  },
+  {
+    q: "Which is NOT a property of a valid metric distance?",
+    opts: ["d(i,j) = d(j,i)", "d(i,i) = 0", "d(i,j) ≤ d(i,k) + d(k,j)", "d(i,j) can be negative"],
+    ans: 3,
+    exp: "A metric must be non-negative, zero only for identical objects, symmetric, and satisfy the triangle inequality. Negative values are not allowed."
+  },
+];
+
+const matchData = [
+  { term: "Nominal", def: "Categories with no order — e.g., zip codes, hair color" },
+  { term: "Ordinal", def: "Ranked values, but unknown gap size — e.g., {small, medium, large}" },
+  { term: "Interval-scaled", def: "Equal units, ordered, no true zero — e.g., Celsius" },
+  { term: "IQR", def: "Q3 − Q1, spread of the middle 50%" },
+  { term: "Euclidean Distance", def: "L₂ norm — straight-line, square root of sum of squared diffs" },
+  { term: "Manhattan Distance", def: "L₁ norm — sum of absolute differences" },
+  { term: "Jaccard Coefficient", def: "q / (q + r + s) — similarity for asymmetric binary" },
+  { term: "Boxplot", def: "Visual of min, Q1, median, Q3, max with whiskers & outliers" },
+  { term: "Positively Skewed", def: "Long right tail: mode < median < mean" },
+  { term: "Normal Distribution", def: "μ±σ = 68%, μ±2σ = 95%, μ±3σ = 99.7%" },
+];
+
+const refData = [
+  {
+    title: "Attribute Types", icon: "🏷️",
+    items: [
+      "Nominal: categories, no order (zip, color)",
+      "Binary: 2 states — symmetric or asymmetric",
+      "Ordinal: ranked, magnitude unknown",
+      "Interval: equal units, no true zero (°C)",
+      "Ratio: true zero exists (Kelvin, length)",
+    ]
+  },
+  {
+    title: "Central Tendency", icon: "📊",
+    items: [
+      "Mean x̄ = (1/n)Σxᵢ — sensitive to outliers",
+      "Median — middle value, robust",
+      "Mode — most frequent value",
+      "Midrange = (min + max) / 2",
+    ],
+    formulas: ["Unimodal: mean − mode = 3(mean − median)"]
+  },
+  {
+    title: "Dispersion", icon: "📏",
+    items: [
+      "Range = max − min",
+      "IQR = Q3 − Q1",
+      "Outlier: beyond 1.5 × IQR from quartile",
+      "Variance s² = Σ(xᵢ−x̄)²/(n−1)",
+      "Std dev s = √s²",
+    ]
+  },
+  {
+    title: "Normal Distribution", icon: "🔔",
+    items: [
+      "μ ± σ → 68% of data",
+      "μ ± 2σ → 95% of data",
+      "μ ± 3σ → 99.7% of data",
+      "Symmetric: mean = median = mode",
+    ]
+  },
+  {
+    title: "Distance Measures", icon: "📐",
+    items: [
+      "Minkowski: (Σ|xᵢf−xⱼf|ʰ)^(1/h)",
+      "h=1: Manhattan (city block)",
+      "h=2: Euclidean (straight-line)",
+      "h→∞: Supremum (max diff)",
+    ],
+    formulas: ["Metric properties: positive, d(i,i)=0, symmetric, triangle ineq."]
+  },
+  {
+    title: "Binary Attributes", icon: "⚖️",
+    items: [
+      "Symmetric: d = (r+s)/(q+r+s+t)",
+      "Asymmetric: d = (r+s)/(q+r+s)",
+      "Jaccard similarity = q/(q+r+s)",
+      "q=both 1, r=i:1 j:0, s=i:0 j:1, t=both 0",
+    ]
+  },
+  {
+    title: "Visualization Methods", icon: "🎨",
+    items: [
+      "Pixel-oriented: color pixels per dimension",
+      "Geometric: scatter plot, projection",
+      "Icon-based: Chernoff faces, stick figures",
+      "Hierarchical: worlds-within-worlds, tree-maps",
+      "Tag cloud: font size = importance",
+    ]
+  },
+  {
+    title: "Ordinal Dissimilarity", icon: "🔢",
+    items: [
+      "1. Replace value with rank rᵢf ∈ {1,...,Mf}",
+      "2. Normalize: zᵢf = (rᵢf − 1)/(Mf − 1)",
+      "3. Apply numeric distance on zᵢf values",
+    ]
+  },
+];
+
+// ========================
+// FLASHCARD LOGIC
+// ========================
+let fcIndex = 0;
+let fcCards = [...flashcards];
+let isFlipped = false;
+
+function renderCard() {
+  const card = fcCards[fcIndex];
+  document.getElementById('fc-front').textContent = card.front;
+  document.getElementById('fc-back').textContent = card.back;
+  document.getElementById('fc-counter').textContent = `Card ${fcIndex + 1} of ${fcCards.length}`;
+  const pct = ((fcIndex + 1) / fcCards.length * 100).toFixed(1);
+  document.getElementById('fc-progress').style.width = pct + '%';
+  const el = document.getElementById('flashcard');
+  el.classList.remove('flipped');
+  isFlipped = false;
+}
+
+function flipCard() {
+  const el = document.getElementById('flashcard');
+  isFlipped = !isFlipped;
+  el.classList.toggle('flipped', isFlipped);
+}
+
+function fcNav(dir) {
+  fcIndex = (fcIndex + dir + fcCards.length) % fcCards.length;
+  renderCard();
+}
+
+function shuffle() {
+  fcCards = [...flashcards].sort(() => Math.random() - 0.5);
+  fcIndex = 0;
+  renderCard();
+}
+
+renderCard();
+
+// ========================
+// QUIZ LOGIC
+// ========================
+let quizAnswers = [];
+let quizSubmitted = false;
+
+function buildQuiz() {
+  const shuffled = [...quizData].sort(() => Math.random() - 0.5).slice(0, 10);
+  quizAnswers = shuffled;
+  const container = document.getElementById('quiz-container');
+  document.getElementById('quiz-score').style.display = 'none';
+
+  container.innerHTML = shuffled.map((q, i) => `
+    <div class="quiz-question" id="qq-${i}">
+      <div class="q-number">Question ${i+1} of ${shuffled.length}</div>
+      <div class="q-text">${q.q}</div>
+      <div class="options">
+        ${q.opts.map((opt, j) => `
+          <button class="option" onclick="selectOption(${i}, ${j})" data-qi="${i}" data-oi="${j}">
+            <strong>${['A','B','C','D'][j]}.</strong> ${opt}
+          </button>
+        `).join('')}
+      </div>
+      <div class="explanation" id="exp-${i}">${q.exp}</div>
+    </div>
+  `).join('') + `<div style="text-align:center;margin-top:1.5rem"><button class="btn primary" onclick="submitQuiz()">Submit Quiz</button></div>`;
+}
+
+const selected = {};
+
+function selectOption(qi, oi) {
+  if (selected[qi] !== undefined) return;
+  selected[qi] = oi;
+  const q = quizAnswers[qi];
+  const btns = document.querySelectorAll(`[data-qi="${qi}"]`);
+  btns.forEach(btn => btn.disabled = true);
+  btns[oi].classList.add(oi === q.ans ? 'correct' : 'wrong');
+  if (oi !== q.ans) btns[q.ans].classList.add('correct');
+  document.getElementById(`exp-${qi}`).classList.add('show');
+}
+
+function submitQuiz() {
+  let score = 0;
+  quizAnswers.forEach((q, i) => {
+    if (selected[i] === q.ans) score++;
+    const btns = document.querySelectorAll(`[data-qi="${i}"]`);
+    btns.forEach(b => b.disabled = true);
+    if (selected[i] !== undefined && selected[i] !== q.ans) btns[q.ans].classList.add('correct');
+    document.getElementById(`exp-${i}`).classList.add('show');
+  });
+
+  const total = quizAnswers.length;
+  const pct = Math.round(score / total * 100);
+  document.getElementById('score-num').textContent = `${pct}%`;
+  document.getElementById('score-label').textContent = `${score} / ${total} correct — ${pct >= 80 ? '🎉 Great job!' : pct >= 60 ? '📚 Keep studying!' : '💪 Review the material and try again!'}`;
+  document.getElementById('quiz-score').style.display = 'block';
+  document.getElementById('quiz-score').scrollIntoView({ behavior: 'smooth' });
+}
+
+function restartQuiz() {
+  Object.keys(selected).forEach(k => delete selected[k]);
+  buildQuiz();
+  document.getElementById('quiz-container').scrollIntoView({ behavior: 'smooth' });
+}
+
+buildQuiz();
+
+// ========================
+// REFERENCE LOGIC
+// ========================
+function buildRef() {
+  document.getElementById('ref-grid').innerHTML = refData.map(sec => `
+    <div class="ref-card">
+      <h3><span>${sec.icon}</span>${sec.title}</h3>
+      ${sec.items.map(i => `<div class="ref-item">${i}</div>`).join('')}
+      ${(sec.formulas || []).map(f => `<div class="formula">${f}</div>`).join('')}
+    </div>
+  `).join('');
+}
+buildRef();
+
+// ========================
+// MATCHING LOGIC
+// ========================
+let matchSelected = { type: null, idx: null };
+let matchPairs = [];
+let matchedCount = 0;
+
+function setupMatch() {
+  const shuffled = [...matchData].sort(() => Math.random() - 0.5).slice(0, 6);
+  matchPairs = shuffled;
+  matchSelected = { type: null, idx: null };
+  matchedCount = 0;
+  updateMatchScore();
+
+  const terms = [...matchPairs].sort(() => Math.random() - 0.5);
+  const defs = [...matchPairs].sort(() => Math.random() - 0.5);
+
+  document.getElementById('match-terms').innerHTML = terms.map((p, i) => `
+    <div class="match-item" id="term-${i}" onclick="selectMatch('term', ${i})" data-val="${p.term}">
+      ${p.term}
+    </div>
+  `).join('');
+
+  document.getElementById('match-defs').innerHTML = defs.map((p, i) => `
+    <div class="match-item" id="def-${i}" onclick="selectMatch('def', ${i})" data-val="${p.term}">
+      ${p.def}
+    </div>
+  `).join('');
+}
+
+function selectMatch(type, idx) {
+  const el = document.getElementById(`${type}-${idx}`);
+  if (el.classList.contains('matched')) return;
+
+  if (matchSelected.type === null) {
+    matchSelected = { type, idx };
+    el.classList.add('selected');
+  } else if (matchSelected.type === type) {
+    document.getElementById(`${matchSelected.type}-${matchSelected.idx}`).classList.remove('selected');
+    matchSelected = { type, idx };
+    el.classList.add('selected');
+  } else {
+    // Check match
+    const termEl = type === 'term' ? el : document.getElementById(`term-${matchSelected.idx}`);
+    const defEl = type === 'def' ? el : document.getElementById(`def-${matchSelected.idx}`);
+    const termVal = termEl.dataset.val;
+    const defVal = defEl.dataset.val;
+
+    document.getElementById(`${matchSelected.type}-${matchSelected.idx}`).classList.remove('selected');
+    el.classList.remove('selected');
+
+    if (termVal === defVal) {
+      termEl.classList.add('matched');
+      defEl.classList.add('matched');
+      matchedCount++;
+      updateMatchScore();
+      if (matchedCount === matchPairs.length) {
+        setTimeout(() => alert('🎉 All matched! Great work!'), 300);
+      }
+    } else {
+      termEl.classList.add('wrong-match');
+      defEl.classList.add('wrong-match');
+      setTimeout(() => {
+        termEl.classList.remove('wrong-match');
+        defEl.classList.remove('wrong-match');
+      }, 500);
+    }
+    matchSelected = { type: null, idx: null };
+  }
+}
+
+function updateMatchScore() {
+  document.getElementById('match-score').textContent =
+    `Matched: ${matchedCount} / ${matchPairs.length}`;
+}
+
+setupMatch();
+
+// ========================
+// TAB SWITCHING
+// ========================
+function switchTab(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('sec-' + id).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+</script>
+</body>
+</html>
